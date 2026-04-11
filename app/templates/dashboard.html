@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer AI Agent MVP</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div>
+        <div class="eyebrow">Autonomous Prospecting Demo</div>
+        <h1>Customer AI Agent</h1>
+        <p class="muted">B2B outreach workflow for France, Switzerland and Luxembourg.</p>
+      </div>
+      <div class="card compliance-card">
+        <h3>Compliance guardrails</h3>
+        <ul>
+          <li>Only B2B leads in allowed countries</li>
+          <li>Opt-out footer in every outbound message</li>
+          <li>Suppression supported via unsubscribe reply</li>
+          <li>Audit log on campaign and inbox actions</li>
+        </ul>
+      </div>
+      <div class="card note-card">
+        <h3>Demo flow</h3>
+        <p>Add a lead, launch a campaign, then simulate an incoming reply to watch AI qualification update the lead.</p>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Presentation-ready dashboard</div>
+          <h2>Outbound automation with AI inbox triage</h2>
+          <p class="muted">Designed as a showcaseable MVP that you can run locally, demo live, and upload to GitHub.</p>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat-card"><span>Total leads</span><strong>{{ stats.total_leads }}</strong></div>
+        <div class="stat-card"><span>Hot leads</span><strong>{{ stats.hot_leads }}</strong></div>
+        <div class="stat-card"><span>Warm leads</span><strong>{{ stats.warm_leads }}</strong></div>
+        <div class="stat-card"><span>Emails sent</span><strong>{{ stats.emails_sent }}</strong></div>
+        <div class="stat-card"><span>Avg. open rate</span><strong>{{ stats.avg_open_rate }}%</strong></div>
+        <div class="stat-card"><span>Avg. reply rate</span><strong>{{ stats.avg_reply_rate }}%</strong></div>
+      </section>
+
+      <section class="grid two-col">
+        <div class="card">
+          <div class="section-title-row">
+            <h3>Create lead</h3>
+            <span class="pill">Manual import</span>
+          </div>
+          <form method="post" action="/lead/create" class="form-grid">
+            <input name="company_name" placeholder="Company name" required />
+            <input name="contact_name" placeholder="Contact name" required />
+            <input name="email" placeholder="Email" required />
+            <input name="industry" placeholder="Industry" required />
+            <select name="country">
+              <option>France</option>
+              <option>Switzerland</option>
+              <option>Luxembourg</option>
+            </select>
+            <input name="source" placeholder="Source" value="Google Maps" />
+            <input name="website" placeholder="Website" />
+            <button type="submit">Add lead</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="section-title-row">
+            <h3>Simulate inbound reply</h3>
+            <span class="pill">AI classification</span>
+          </div>
+          <form method="post" action="/reply/simulate" class="form-grid">
+            <select name="lead_id">
+              {% for lead in leads %}
+              <option value="{{ lead.id }}">{{ lead.company_name }} — {{ lead.contact_name }}</option>
+              {% endfor %}
+            </select>
+            <input name="subject" value="Re: AI outbound workflow" required />
+            <textarea name="body" rows="5">We are interested. Please send more info and pricing.</textarea>
+            <button type="submit">Process reply</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title-row">
+          <h3>Campaigns</h3>
+          <span class="pill">Launch-ready</span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Country</th><th>Status</th><th>Sent</th><th>Open rate</th><th>Reply rate</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for campaign in campaigns %}
+            <tr>
+              <td>{{ campaign.name }}</td>
+              <td>{{ campaign.target_country }}</td>
+              <td><span class="status {{ campaign.status|lower }}">{{ campaign.status }}</span></td>
+              <td>{{ campaign.sent_count }}</td>
+              <td>{{ campaign.open_rate }}%</td>
+              <td>{{ campaign.reply_rate }}%</td>
+              <td>
+                <form method="post" action="/campaign/{{ campaign.id }}/launch">
+                  <button type="submit">Launch</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="grid two-col">
+        <div class="card">
+          <div class="section-title-row">
+            <h3>Leads</h3>
+            <span class="pill">Qualification</span>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Company</th><th>Contact</th><th>Country</th><th>Status</th><th>Score</th><th>Opt-out</th></tr>
+            </thead>
+            <tbody>
+              {% for lead in leads %}
+              <tr>
+                <td>
+                  <div class="primary">{{ lead.company_name }}</div>
+                  <div class="secondary">{{ lead.industry }}</div>
+                </td>
+                <td>{{ lead.contact_name }}<br><span class="secondary">{{ lead.email }}</span></td>
+                <td>{{ lead.country }}</td>
+                <td><span class="status {{ lead.status|lower }}">{{ lead.status }}</span></td>
+                <td>{{ lead.score }}</td>
+                <td>{{ 'Yes' if lead.opted_out else 'No' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card stack-gap">
+          <div>
+            <div class="section-title-row">
+              <h3>Latest AI-handled replies</h3>
+              <span class="pill">Inbox triage</span>
+            </div>
+            {% if replies %}
+              {% for reply in replies %}
+              <div class="reply-card">
+                <div class="reply-head">
+                  <strong>{{ reply.subject }}</strong>
+                  <span class="status {{ reply.detected_intent|lower }}">{{ reply.detected_intent }}</span>
+                </div>
+                <p>{{ reply.body }}</p>
+                <div class="secondary">Auto response: {{ reply.auto_response }}</div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p class="muted">No replies processed yet.</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <div class="section-title-row">
+              <h3>Recent audit events</h3>
+              <span class="pill">Traceability</span>
+            </div>
+            <div class="audit-list">
+              {% for event in events %}
+              <div class="audit-item">
+                <strong>{{ event.event_type }}</strong>
+                <span class="secondary">{{ event.payload }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
