@@ -1,4 +1,4 @@
-#  Agent MVPB2B AI Outreach Agent
+#  Agent B2B AI Outreach Agent
 
 A presentation-ready MVP for an autonomous B2B prospecting and email management agent.
 
